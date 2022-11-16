@@ -19,6 +19,7 @@ The PCB files I will eventually include here, are a use at your own risk type si
 I currently power the ESP32 via a usb hub and the fans with a 12v 2amp adapter. I initially used a buck convertor to tap off a 12v dc supply into 5v but I didn't like the bulk it added and my electronics isn't good enought to confidently build my own into the PCB design so I left it until I get better at it.
 
 ## Current support
+* Written in C++ using platform.io via VS code
 * DHT11 temp/humiditiy sensor
 * ESP32 MCUs (I used an Adafruit Huzzah32 feather v2 with w.fl wifi connector)
 * 128x64 display (I used an Adafruit featherwing oled 128x64 display)
