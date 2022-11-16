@@ -1,0 +1,2 @@
+void setFanSpeedFromTemperature();
+int getCurrentFanSpeedPercentage();
