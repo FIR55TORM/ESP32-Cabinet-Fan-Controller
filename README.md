@@ -1,8 +1,8 @@
 # Cabinet Fan Controller
-or where ever you decided to put it, fan controller
+or where ever you decided to put it, fan controller...
 
 This project started with the need to cool a small Ikea cabinet full of computer hardware and it got me thinking, why not overengineer a solution to a simple problem?
-So based on an ESP32 microcontroller and after some prototyping later, the fruits of my labour (hopefully ours at somepoint) are now here.
+So based on an ESP32 microcontroller and after some prototyping later, the fruits of my labour (hopefully ours at some point) are now here.
 
 ## Now this isn't an original idea
 During my research, I came across the lovely project by @KlausMu and their project, found here: https://github.com/KlausMu/esp32-fan-controller is likely more fully featured and deserves credit. 
