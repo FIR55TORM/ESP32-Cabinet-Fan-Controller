@@ -8,6 +8,7 @@
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
+#include <AsyncMqttClient.h>
 #include "includes/DHT11Sensor.h"
 #include "includes/fanPWM.h"
 #include "dtos/TemperatureHumidityDto.h"
@@ -29,6 +30,14 @@ String pass;
 String ip;
 String gateway;
 
+//MQTT values
+bool useMQTT = false;
+String mqttServerIp;
+String mqttServerPort;
+String mqttUsername;
+String mqttPassword;
+String mqttClientName;
+
 // File paths to save input values permanently
 const char *ssidPath = "/ssid.txt";
 const char *passPath = "/pass.txt";
@@ -36,7 +45,7 @@ const char *ipPath = "/ip.txt";
 const char *gatewayPath = "/gateway.txt";
 
 // JSON Configuration file
-const char *savedJsonConfig = "config.json";
+const char *savedJsonConfig = "config.json"; //for future use
 
 IPAddress localIP;
 // Set your Gateway IP address
@@ -55,6 +64,40 @@ AsyncWebServer server(80);
 
 // Create Event source for live data send back to client browser
 AsyncEventSource events("/events");
+
+//MQTT Config
+AsyncMqttClient mqttClient;
+
+// MQTT
+void onMqttConnect(bool sessionPresent) {
+  Serial.println("Connected to MQTT.");
+  Serial.print("Session present: ");
+  Serial.println(sessionPresent);
+  uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
+  Serial.print("Subscribing at QoS 2, packetId: ");
+  Serial.println(packetIdSub);
+  mqttClient.publish("test/lol", 0, true, "test 1");
+  Serial.println("Publishing at QoS 0");
+  uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
+  Serial.print("Publishing at QoS 1, packetId: ");
+  Serial.println(packetIdPub1);
+  uint16_t packetIdPub2 = mqttClient.publish("test/lol", 2, true, "test 3");
+  Serial.print("Publishing at QoS 2, packetId: ");
+  Serial.println(packetIdPub2);
+}
+
+void initMQTT(){
+  if(!useMQTT){
+    return;
+  }
+
+  mqttClient.onConnect(onMqttConnect);
+  mqttClient.setServer("192.168.1.110", 1883);
+  mqttClient.setCredentials("homeassistant", "ieX4shaimieveiShe4quaiW7ea2vienaeV0Ii8hae9ietheePieTu0iepeeNg8fe");
+  mqttClient.setClientId("Cabinet Fan Controller");
+}
+
+
 
 // Initialize SPIFFS
 void initSPIFFS()
@@ -231,8 +274,9 @@ void setup()
   //initSensorDataLogger();
 
   if (initWiFi())
-  {
+  {    
     initEventSources();
+    initMQTT();
 
     // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
