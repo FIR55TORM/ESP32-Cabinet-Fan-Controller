@@ -369,12 +369,12 @@ void setup()
     Serial.println(IP);
 
     // Web Server Root URL
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(SPIFFS, "/wifimanager.html", "text/html"); });
+    server.on("/wifimanager", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(SPIFFS, "/index.html", "text/html"); });
 
     server.serveStatic("/", SPIFFS, "/");
 
-    server.on("/", HTTP_POST, [](AsyncWebServerRequest *request)
+    server.on("/WifiDetails", HTTP_POST, [](AsyncWebServerRequest *request)
               {
       int params = request->params();
       for(int i=0;i<params;i++){

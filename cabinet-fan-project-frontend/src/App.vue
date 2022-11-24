@@ -9,20 +9,17 @@ library.add(faFan);
 <template>
   <nav class="navbar navbar-expand-lg bg-light mb-3">
     <div class="container-fluid">
-      <span class="navbar-brand mb-0 h1"
-        >Cabinet Fan Control <font-awesome-icon icon="fa-solid fa-fan" spin /></span>
+      <span class="navbar-brand mb-0 h1">Cabinet Fan Control
+        <font-awesome-icon icon="fa-solid fa-fan" spin />
+      </span>
 
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
           <li class="nav-item">
-            <RouterLink class="nav-link" aria-current="page" to="/"
-              >Home</RouterLink
-            >
+            <RouterLink class="nav-link" aria-current="page" to="/">Home</RouterLink>
           </li>
           <li class="nav-item">
-            <RouterLink class="nav-link" aria-current="page" to="/wifimanager"
-              >WiFi Manager</RouterLink
-            >
+            <RouterLink class="nav-link" aria-current="page" to="/wifimanager">WiFi Manager</RouterLink>
           </li>
         </ul>
       </div>
