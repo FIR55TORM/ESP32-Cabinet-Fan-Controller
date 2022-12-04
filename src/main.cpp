@@ -1,9 +1,12 @@
+#define CORS_DEBUG true
+
 #include <Arduino.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncElegantOTA.h>
 #include "SPIFFS.h"
+#include "AsyncJson.h"
 #include <ArduinoJson.h>
 #include "FS.h"
 #include "SD.h"
@@ -18,19 +21,27 @@
 #include "includes/SensorDataLoggerManager.h"
 #include "includes/AdafruitOLED64x128.h"
 
-// Search for parameter in HTTP POST request
-const char *PARAM_INPUT_1 = "ssid";
-const char *PARAM_INPUT_2 = "pass";
-const char *PARAM_INPUT_3 = "ip";
-const char *PARAM_INPUT_4 = "gateway";
+// ajax parameters in HTTP POST request for Wifi
+const char *PARAM_INPUT_SSID = "ssid";
+const char *PARAM_INPUT_PASSKEY = "passkey";
+const char *PARAM_INPUT_IP = "deviceIp";
+const char *PARAM_INPUT_GATEWAY = "gatewayIp";
 
-// Variables to save values from HTML form
+// ajax parameters in HTTP POST request for MQTT
+const char *PARAM_INPUT_IS_USING_MQTT = "isUsingMQTT";
+const char *PARAM_INPUT_CLIENT_NAME = "clientName";
+const char *PARAM_INPUT_BROKER_IP = "brokerIp";
+const char *PARAM_INPUT_BROKER_PORT = "brokerPort";
+const char *PARAM_INPUT_BROKER_USERNAME = "brokerUsername";
+const char *PARAM_INPUT_BROKER_PASSWORD = "brokerPassword";
+
+// Wifi variables to save values from HTML form
 String ssid;
 String pass;
 String ip;
 String gateway;
 
-//MQTT values
+// MQTT variables to save values from HTML form
 bool useMQTT = false;
 String mqttServerIp;
 String mqttServerPort;
@@ -38,14 +49,8 @@ String mqttUsername;
 String mqttPassword;
 String mqttClientName;
 
-// File paths to save input values permanently
-const char *ssidPath = "/ssid.txt";
-const char *passPath = "/pass.txt";
-const char *ipPath = "/ip.txt";
-const char *gatewayPath = "/gateway.txt";
-
-// JSON Configuration file
-const char *savedJsonConfig = "config.json"; //for future use
+// wifi & MQTT config file
+const char *configPath = "/config.json";
 
 IPAddress localIP;
 // Set your Gateway IP address
@@ -65,11 +70,12 @@ AsyncWebServer server(80);
 // Create Event source for live data send back to client browser
 AsyncEventSource events("/events");
 
-//MQTT Config
+// MQTT Config
 AsyncMqttClient mqttClient;
 
 // MQTT
-void onMqttConnect(bool sessionPresent) {
+void onMqttConnect(bool sessionPresent)
+{
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
@@ -86,8 +92,10 @@ void onMqttConnect(bool sessionPresent) {
   Serial.println(packetIdPub2);
 }
 
-void initMQTT(){
-  if(!useMQTT){
+void initMQTT()
+{
+  if (!useMQTT)
+  {
     return;
   }
 
@@ -96,8 +104,6 @@ void initMQTT(){
   mqttClient.setCredentials("homeassistant", "ieX4shaimieveiShe4quaiW7ea2vienaeV0Ii8hae9ietheePieTu0iepeeNg8fe");
   mqttClient.setClientId("Cabinet Fan Controller");
 }
-
-
 
 // Initialize SPIFFS
 void initSPIFFS()
@@ -236,13 +242,31 @@ bool initWiFi()
   return true;
 }
 
-void initWifiDetails()
+void initWifiAndMQTTDetails()
 {
-  // Load values saved in SPIFFS
-  ssid = readFile(SPIFFS, ssidPath);
-  pass = readFile(SPIFFS, passPath);
-  ip = readFile(SPIFFS, ipPath);
-  gateway = readFile(SPIFFS, gatewayPath);
+  DynamicJsonDocument json(1024);
+  String jsonString = readFile(SPIFFS, configPath);
+
+  Serial.println(jsonString);
+
+  if (DeserializationError::Ok == deserializeJson(json, jsonString.c_str()))
+  {
+    JsonObject obj = json.as<JsonObject>();
+
+    // Wifi
+    ssid = obj[PARAM_INPUT_SSID].as<String>().c_str();
+    pass = obj[PARAM_INPUT_PASSKEY].as<String>().c_str();
+    ip = obj[PARAM_INPUT_IP].as<String>().c_str();
+    gateway = obj[PARAM_INPUT_GATEWAY].as<String>().c_str();
+
+    // MQTT
+    useMQTT = obj[PARAM_INPUT_IS_USING_MQTT].as<bool>();
+    mqttServerIp = obj[PARAM_INPUT_BROKER_IP].as<String>().c_str();
+    mqttServerPort = obj[PARAM_INPUT_BROKER_PORT].as<String>().c_str();
+    mqttUsername = obj[PARAM_INPUT_BROKER_USERNAME].as<String>().c_str();
+    mqttPassword = obj[PARAM_INPUT_BROKER_PASSWORD].as<String>().c_str();
+    mqttClientName = obj[PARAM_INPUT_CLIENT_NAME].as<String>().c_str();
+  }
 }
 
 void initEventSources()
@@ -259,6 +283,10 @@ void initEventSources()
   server.addHandler(&events);
 }
 
+AsyncWebHandler handleStaticAssets(AsyncWebServerRequest *request, String path)
+{
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -268,13 +296,13 @@ void setup()
   initDHTSensor();
   initFanPWM();
   initTacho();
-  initWifiDetails();
+  initWifiAndMQTTDetails();
   initSDCard();
   initConfigFile();
-  //initSensorDataLogger();
+  // initSensorDataLogger();
 
   if (initWiFi())
-  {    
+  {
     initEventSources();
     initMQTT();
 
@@ -282,6 +310,15 @@ void setup()
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", "text/html", false); });
     server.serveStatic("/", SPIFFS, "/");
+
+    // Handle Web Assets
+    // server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request)
+    //           {
+    //             AsyncWebServerResponse *response  = request->beginResponse(SPIFFS, "assets/index.js.gz", "text/javascript", false);
+    //             response->addHeader("Content-Encoding", "gzip");
+    //             request->send(response);
+    //             Serial.println("beep");
+    //             });
 
     // Route to get Sensor Data
     server.on("/api/get-sensors", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -295,37 +332,64 @@ void setup()
                 request->send(response); });
 
     // Route to set fan speed
-    server.on("/api/set-fan-speed", HTTP_POST, [](AsyncWebServerRequest *request)
-              {
-                if(request->hasParam("speed", true)){
-                  AsyncWebParameter* p = request->getParam("speed", true);                            
-                  setFanPWM(p->value().toInt());
-                  request->send(200);                    
-                } else{
-                  request->send(404);
-                } });
+    AsyncCallbackJsonWebHandler *setFanSpeedHandler = new AsyncCallbackJsonWebHandler(
+        "/api/set-fan-speed",
+        [](AsyncWebServerRequest *request, JsonVariant json)
+        {
+          JsonObject jsonObj = json.as<JsonObject>();
+
+          if (jsonObj.containsKey("speed"))
+          {
+            setFanPWM(jsonObj["speed"].as<int>());
+            request->send(200);
+          }
+          else
+          {
+            request->send(404);
+          }
+        });
+
+    server.addHandler(setFanSpeedHandler);
 
     // Route to set automatic mode
-    server.on("/api/set-automatic-mode", HTTP_POST, [](AsyncWebServerRequest *request)
-              {
-                if(request->hasParam("isAutomaticMode", true)){
-                  AsyncWebParameter* p = request->getParam("isAutomaticMode", true);                                              
-                  setAutomaticMode(p->value().toInt());
-                  request->send(200);                    
-                } else{
-                  request->send(404);
-                } });
+    AsyncCallbackJsonWebHandler *setAutomaticModeHandler = new AsyncCallbackJsonWebHandler(
+        "/api/set-automatic-mode",
+        [](AsyncWebServerRequest *request, JsonVariant json)
+        {
+          JsonObject jsonObj = json.as<JsonObject>();
+
+          if (jsonObj.containsKey("isAutomaticMode"))
+          {
+            setAutomaticMode(jsonObj["isAutomaticMode"].as<int>());
+            request->send(200);
+          }
+          else
+          {
+            request->send(404);
+          }
+        });
+
+    server.addHandler(setAutomaticModeHandler);
 
     // Route to set target temperature
-    server.on("/api/set-target-temperature", HTTP_POST, [](AsyncWebServerRequest *request)
-              {
-                if(request->hasParam("targetTemperature", true)){
-                  AsyncWebParameter* p = request->getParam("targetTemperature", true);                                              
-                  setTargetTemperature(p->value().toInt());
-                  request->send(200);                    
-                } else{
-                  request->send(404);
-                } });
+    AsyncCallbackJsonWebHandler *setTargetTemperatureHandler = new AsyncCallbackJsonWebHandler(
+        "/api/set-target-temperature",
+        [](AsyncWebServerRequest *request, JsonVariant json)
+        {
+          JsonObject jsonObj = json.as<JsonObject>();
+
+          if (jsonObj.containsKey("targetTemperature"))
+          {
+            setTargetTemperature(jsonObj["targetTemperature"].as<int>());
+            request->send(200);
+          }
+          else
+          {
+            request->send(404);
+          }
+        });
+
+    server.addHandler(setTargetTemperatureHandler);
 
     // Route to get configuration settings
     server.on("/api/get-config", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -354,7 +418,12 @@ void setup()
                  printFile("/config.txt");
                 request->send(200); });
 
+#ifdef CORS_DEBUG == true
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Accept, Content-Type, Authorization");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+#endif
+
     server.begin();
   }
   else
@@ -369,55 +438,30 @@ void setup()
     Serial.println(IP);
 
     // Web Server Root URL
-    server.on("/wifimanager", HTTP_GET, [](AsyncWebServerRequest *request)
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", "text/html"); });
 
     server.serveStatic("/", SPIFFS, "/");
 
-    server.on("/WifiDetails", HTTP_POST, [](AsyncWebServerRequest *request)
-              {
-      int params = request->params();
-      for(int i=0;i<params;i++){
-        AsyncWebParameter* p = request->getParam(i);
-        if(p->isPost()){
-          // HTTP POST ssid value
-          if (p->name() == PARAM_INPUT_1) {
-            ssid = p->value().c_str();
-            Serial.print("SSID set to: ");
-            Serial.println(ssid);
-            // Write file to save value
-            writeFile(SPIFFS, ssidPath, ssid.c_str());
-          }
-          // HTTP POST pass value
-          if (p->name() == PARAM_INPUT_2) {
-            pass = p->value().c_str();
-            Serial.print("Password set to: ");
-            Serial.println(pass);
-            // Write file to save value
-            writeFile(SPIFFS, passPath, pass.c_str());
-          }
-          // HTTP POST ip value
-          if (p->name() == PARAM_INPUT_3) {
-            ip = p->value().c_str();
-            Serial.print("IP Address set to: ");
-            Serial.println(ip);
-            // Write file to save value
-            writeFile(SPIFFS, ipPath, ip.c_str());
-          }
-          // HTTP POST gateway value
-          if (p->name() == PARAM_INPUT_4) {
-            gateway = p->value().c_str();
-            Serial.print("Gateway set to: ");
-            Serial.println(gateway);
-            // Write file to save value
-            writeFile(SPIFFS, gatewayPath, gateway.c_str());
-          }
-          //Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
-        }
-      }
-      request->send(200, "text/plain", "Done. FAN CONTROL will restart, connect to your router and go to IP address: " + ip);
-      delay(3000);
-      ESP.restart(); });
+    server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                         { 
+                            if(request->url() == "/WifiDetails" && request->method() == HTTP_POST)
+                            {
+                              DynamicJsonDocument json(1024); 
+
+                              if (DeserializationError::Ok == deserializeJson(json, (const char*)data))
+                              {
+                                JsonObject obj = json.as<JsonObject>();
+
+                                String jsonString = json.as<String>();
+                                writeFile(SPIFFS, configPath, jsonString.c_str());
+
+                                request->send(200, "text/plain", "Done. FAN CONTROL will restart, connect to your router and go to IP address: " + ip);
+                                delay(3000);
+                                ESP.restart();
+                              }
+                            } });
+
     server.begin();
   }
 }
@@ -466,9 +510,8 @@ void loop()
 
       events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());
 
-      //Data Logging
-      //printLocalTime();
-
+      // Data Logging
+      // printLocalTime();
     }
   }
 }

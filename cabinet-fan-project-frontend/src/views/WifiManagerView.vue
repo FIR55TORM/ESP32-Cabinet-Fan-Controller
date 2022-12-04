@@ -7,8 +7,7 @@
             <div class="col-6">
               <div class="mb-3">
                 <label for="txtSSID" class="form-label">Wifi Name (SSID)</label>
-                <input type="text" class="form-control" id="txtSSID" aria-describedby="ssidHelp"
-                  v-model="ssid" />
+                <input type="text" class="form-control" id="txtSSID" aria-describedby="ssidHelp" v-model="ssid" />
                 <div id="ssidHelp" class="form-text">
                   The name of your WiFi network (SSID)
                 </div>
@@ -25,8 +24,7 @@
 
               <div class="mb-3">
                 <label for="txtIp" class="form-label">IP of this device</label>
-                <input type="text" class="form-control" id="txtIp" aria-describedby="ipHelp"
-                  v-model="deviceIp" />
+                <input type="text" class="form-control" id="txtIp" aria-describedby="ipHelp" v-model="deviceIp" />
                 <div id="ipHelp" class="form-text">
                   IP address for this device (IPv4)
                 </div>
@@ -78,8 +76,8 @@
 
                 <div class="mb-3">
                   <label for="txtMqttUsername" class="form-label">Username</label>
-                  <input type="text" class="form-control" id="txtMqttUsername" aria-describedby="mtqqUsernameHelp" 
-                  v-model="brokerUsername"/>
+                  <input type="text" class="form-control" id="txtMqttUsername" aria-describedby="mtqqUsernameHelp"
+                    v-model="brokerUsername" />
                   <div id="mtqqUsernameHelp" class="form-text">
                     Username for MQTT broker
                   </div>
@@ -87,9 +85,8 @@
 
                 <div class="mb-3">
                   <label for="txtMqttPassword" class="form-label">Password</label>
-                  <input type="password" class="form-control" id="txtMqttPassword"
-                    aria-describedby="mtqqPasswordHelp" 
-                    v-model="brokerPassword"/>
+                  <input type="password" class="form-control" id="txtMqttPassword" aria-describedby="mtqqPasswordHelp"
+                    v-model="brokerPassword" />
                   <div id="mtqqPasswordHelp" class="form-text">
                     Password for MQTT broker
                   </div>
@@ -98,7 +95,9 @@
             </div>
           </div>
           <hr />
-          <button type="submit" class="btn btn-primary">Submit</button>
+          <button type="submit" class="btn btn-primary" @click.prevent="submit">
+            Submit
+          </button>
         </form>
       </div>
     </div>
@@ -107,6 +106,7 @@
 
 <script setup>
 import { ref, reactive } from "vue";
+import axios from "axios";
 
 const isUsingMQTT = ref(false);
 
@@ -123,4 +123,18 @@ const brokerPort = ref("1883");
 const brokerUsername = ref("");
 const brokerPassword = ref("");
 
+const submit = () => {
+  axios.post("/WifiDetails", {
+    ssid: ssid.value,
+    passkey: passkey.value,
+    deviceIp: deviceIp.value,
+    gatewayIp: gatewayIp.value,
+    isUsingMQTT: isUsingMQTT.value,
+    clientName: clientName.value,
+    brokerIp: brokerIp.value,
+    brokerPort: brokerPort.value,
+    brokerUsername: brokerUsername.value,
+    brokerPassword: brokerPassword.value
+  });
+};
 </script>
