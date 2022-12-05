@@ -1,9 +1,9 @@
 <template>    
-    <v-chart class="gauge" :option="humidityGaugeOptions" :autoresize="true" />
+    <v-chart class="gauge" :option="temperatureGaugeOptions" :autoresize="true"  />
 </template>
 
 <script setup>
-import { useHomeStore } from "../../stores/home";
+import { useHomeStore } from "../stores/home";
 import { reactive } from "vue";
 import * as echarts from "echarts/core";
 import { GaugeChart } from "echarts/charts";
@@ -17,117 +17,118 @@ echarts.use([
 ]);
 
 const store = useHomeStore();
-const { humidityRounded } = storeToRefs(store);
-const humidityGaugeOptions = reactive({
-    backgroundColor: 'transparent',
+const { temperatureRounded } = storeToRefs(store);
+const temperatureGaugeOptions = reactive({
+    backgroundColor: "transparent",
     series: [
         {
-            type: 'gauge',
-            center: ['50%', '60%'],
+            type: "gauge",
+            center: ["50%", "60%"],
             startAngle: 200,
             endAngle: -20,
             min: 0,
-            max: 100,
+            max: 40,
             splitNumber: 10,
             itemStyle: {
-                color: '#FFAB91'
+                color: "#FFAB91",
             },
             progress: {
                 show: true,
-                width: 30
+                width: 30,
             },
             pointer: {
-                show: false
+                show: false,
             },
             axisLine: {
                 lineStyle: {
-                    width: 30
-                }
+                    width: 30,
+                },
             },
             axisTick: {
                 distance: -45,
                 splitNumber: 5,
                 lineStyle: {
                     width: 2,
-                    color: '#999'
-                }
+                    color: "#999",
+                },
             },
             splitLine: {
                 distance: -52,
                 length: 14,
                 lineStyle: {
                     width: 3,
-                    color: '#999'
-                }
+                    color: "#999",
+                },
             },
             axisLabel: {
                 distance: 0,
-                color: '#999',
-                fontSize: 12
+                color: "#999",
+                fontSize: 12,
             },
             anchor: {
-                show: false
+                show: false,
             },
             title: {
-                show: true
+                show: true,
             },
             detail: {
                 valueAnimation: true,
-                width: '60%',
+                width: "60%",
                 lineHeight: 40,
                 borderRadius: 8,
-                offsetCenter: [0, '-15%'],
+                offsetCenter: [0, "-15%"],
                 fontSize: 30,
-                fontWeight: 'bolder',
-                formatter: '{value}%',
-                color: 'auto'
+                fontWeight: "bolder",
+                formatter: "{value} °C",
+                color: "auto",
             },
             data: [
                 {
-                    value: humidityRounded,
-                    name: "Humidity"
-                }
-            ]
+                    value: temperatureRounded,
+                    name: "Current Temp",
+                },
+            ],
         },
         {
-            type: 'gauge',
-            center: ['50%', '60%'],
+            type: "gauge",
+            center: ["50%", "60%"],
             startAngle: 200,
             endAngle: -20,
             min: 0,
             max: 60,
             itemStyle: {
-                color: '#FD7347'
+                color: "#FD7347",
             },
             progress: {
                 show: false,
-                width: 8
+                width: 8,
             },
             pointer: {
-                show: false
+                show: false,
             },
             axisLine: {
-                show: false
+                show: false,
             },
             axisTick: {
-                show: false
+                show: false,
             },
             splitLine: {
-                show: false
+                show: false,
             },
             axisLabel: {
-                show: false
+                show: false,
             },
             detail: {
-                show: false
+                show: false,
             },
             data: [
                 {
-                    value: humidityRounded
-                }
-            ]
-        }
-    ]
+                    value: 20,
+                },
+            ],
+        },
+    ],
+
 });
 
 </script>

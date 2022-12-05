@@ -7,18 +7,18 @@ const API_ENDPOINTS = {
     SET_FAN_SPEED: "/api/set-fan-speed",
     SET_IS_AUTOMATIC_MODE: "/api/set-automatic-mode",
     SET_TARGET_TEMPERATURE: "/api/set-target-temperature",
-    EVENTS: {
-        CURRENT_TEMPERATURE: "/events"
-    },
     GET_CONFIG: "/api/get-config"
-}
+};
+
+const EVENT_SOURCE_ENDPOINT = "/events";
 
 export const useHomeStore = defineStore("home", () => {
     const application = useApplicationStore();
     const temperatureRounded = ref("0.0");
     const humidityRounded = ref("0.0");
     const isDarkMode = application.isDarkMode;
-    const fanReading = reactive({ fanTacho: 0, currentFanSpeedPercentage: 0 });
+    const fanTacho = ref(0);
+    const currentFanSpeedPercentage = ref(0);
     const fanSetSpeedPercentage = ref(0);
     const isFanAutoMode = ref(false);
     const targetTemperature = ref(25);
@@ -28,7 +28,7 @@ export const useHomeStore = defineStore("home", () => {
     // Read more about EventSource: 
     // https://developer.mozilla.org/en-US/docs/Web/API/EventSource
     const initServerEvents = () => {
-        var source = new EventSource(API_ENDPOINTS.EVENTS.CURRENT_TEMPERATURE);
+        var source = new EventSource(EVENT_SOURCE_ENDPOINT);
 
         source.addEventListener('open', function (e) {
             console.log("Events Connected");
@@ -54,7 +54,9 @@ export const useHomeStore = defineStore("home", () => {
 
         source.addEventListener("onFanTachoReading", (e) => {
             console.log("onFanTachoReading", e.data);
-            fanReading.value = e.data;
+            var reading = JSON.parse(e.data);
+            fanTacho.value = reading.fanTacho;
+            currentFanSpeedPercentage.value = reading.currentFanSpeedPercentage;
         });
     }
 
@@ -93,7 +95,8 @@ export const useHomeStore = defineStore("home", () => {
         temperatureRounded,
         humidityRounded,
         isDarkMode,
-        fanReading,
+        fanTacho,
+        currentFanSpeedPercentage,
         fanSetSpeedPercentage,
         isFanAutoMode,
         targetTemperature,

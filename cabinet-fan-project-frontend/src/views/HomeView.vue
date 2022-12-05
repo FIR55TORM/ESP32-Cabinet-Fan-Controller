@@ -18,8 +18,12 @@
         <div class="col-3">
           <HumidityGauge />
         </div>
-        <div class="col-3"></div>
-        <div class="col-3"></div>
+        <div class="col-3">
+          <TachoGauge />
+        </div>
+        <div class="col-3">
+          <CurrentFanSpeedPercentage />
+        </div>
 
         <div class="col-6">
           <div class="card">
@@ -38,7 +42,8 @@
                 <div class="input-group">
                   <span class="input-group-text">Target Temperature</span>
                   <input type="text" class="form-control" id="txtTargetTemp" v-model="store.targetTemperature"
-                    :disabled="!store.isFanAutoMode" :class="{ disabled: !store.isFanAutoMode }" @change="onChangeTargetTemperature"/>
+                    :disabled="!store.isFanAutoMode" :class="{ disabled: !store.isFanAutoMode }"
+                    @change="onChangeTargetTemperature" />
                   <span class="input-group-text">°C</span>
                 </div>
                 <div class="form-text">Between 10 - 30°C only</div>
@@ -57,7 +62,8 @@
               <div>
                 <label for="rngFanSpeed" class="form-label">Fan Speed: <span
                     id="speed-readout"></span><span>%</span></label>
-                <input type="range" class="form-range" min="0" max="100" id="rngFanSpeed" v-model="store.fanSetSpeedPercentage" @change="onChangeManualFanSpeed"/>
+                <input type="range" class="form-range" min="0" max="100" id="rngFanSpeed"
+                  v-model="store.fanSetSpeedPercentage" @change="onChangeManualFanSpeed" />
               </div>
             </div>
           </div>
@@ -70,8 +76,10 @@
 <script setup>
 import { onMounted } from "vue";
 import { useHomeStore } from "../stores/home";
-import TemperatureGauge from './components/TemperatureGaugeComponent.vue';
-import HumidityGauge from "./components/HumidityGaugeComponent.vue";
+import TemperatureGauge from '../components/TemperatureGaugeComponent.vue';
+import HumidityGauge from "../components/HumidityGaugeComponent.vue";
+import TachoGauge from "../components/TachoGaugeComponent.vue";
+import CurrentFanSpeedPercentage from "../components/CurrentSetFanSpeedGaugeComponent.vue"
 
 const store = useHomeStore();
 

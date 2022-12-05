@@ -60,8 +60,11 @@ IPAddress subnet(255, 255, 0, 0);
 // Timer variables
 unsigned long previousMilliseconds = 0;
 unsigned long intervalOneSecond = 1000;
+unsigned long previousMilliseconds5000Cycle = 0;
+unsigned long intervalFiveSeconds = 5000;
 unsigned long previousMilliseconds10000Cycle = 0;
 unsigned long intervalTenSeconds = 10000;
+
 const long intervalWifi = 10000; // interval to wait for Wi-Fi connection (milliseconds)
 
 // Create AsyncWebServer object on port 80
@@ -489,7 +492,12 @@ void loop()
     // functions called every 10000 ms
     if ((currentMilliseconds - previousMilliseconds10000Cycle) >= intervalTenSeconds)
     {
-      previousMilliseconds10000Cycle = currentMilliseconds;
+    }
+
+    // functions called every 5000 ms
+    if ((currentMilliseconds - previousMilliseconds5000Cycle) >= intervalFiveSeconds)
+    {
+      previousMilliseconds5000Cycle = currentMilliseconds;
 
       // Temps
       DynamicJsonDocument tempsJson(1024);
