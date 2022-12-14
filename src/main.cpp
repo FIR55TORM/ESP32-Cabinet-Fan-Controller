@@ -44,7 +44,7 @@ String gateway;
 // MQTT variables to save values from HTML form
 bool useMQTT = false;
 String mqttServerIp;
-String mqttServerPort;
+int mqttServerPort;
 String mqttUsername;
 String mqttPassword;
 String mqttClientName;
@@ -104,9 +104,11 @@ void initMQTT()
   }
 
   mqttClient.onConnect(onMqttConnect);
-  mqttClient.setServer("192.168.1.110", 1883);
-  mqttClient.setCredentials("homeassistant", "ieX4shaimieveiShe4quaiW7ea2vienaeV0Ii8hae9ietheePieTu0iepeeNg8fe");
-  mqttClient.setClientId("Cabinet Fan Controller");
+  mqttClient.setServer(mqttServerIp.c_str(), mqttServerPort);
+  mqttClient.setCredentials(mqttUsername.c_str(), mqttPassword.c_str());
+  mqttClient.setClientId(mqttClientName.c_str());
+
+  mqttClient.connect();
 }
 
 // Initialize SPIFFS
@@ -266,7 +268,7 @@ void initWifiAndMQTTDetails()
     // MQTT
     useMQTT = obj[PARAM_INPUT_IS_USING_MQTT].as<bool>();
     mqttServerIp = obj[PARAM_INPUT_BROKER_IP].as<String>().c_str();
-    mqttServerPort = obj[PARAM_INPUT_BROKER_PORT].as<String>().c_str();
+    mqttServerPort = obj[PARAM_INPUT_BROKER_PORT].as<int>();
     mqttUsername = obj[PARAM_INPUT_BROKER_USERNAME].as<String>().c_str();
     mqttPassword = obj[PARAM_INPUT_BROKER_PASSWORD].as<String>().c_str();
     mqttClientName = obj[PARAM_INPUT_CLIENT_NAME].as<String>().c_str();
