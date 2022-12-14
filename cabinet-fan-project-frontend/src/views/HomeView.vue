@@ -95,7 +95,7 @@ const onChangeTargetTemperature = () => {
   store.setTargetTemperature();
 }
 
-onMounted(() => {
+onMounted(() => {  
   store.getConfig();
   store.initServerEvents();
 });

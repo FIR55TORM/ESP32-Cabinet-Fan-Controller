@@ -2,15 +2,7 @@ import { useApplicationStore } from "./application";
 import { ref, computed, reactive } from "vue";
 import { defineStore } from "pinia";
 import axios from "axios";
-
-const API_ENDPOINTS = {
-    SET_FAN_SPEED: "/api/set-fan-speed",
-    SET_IS_AUTOMATIC_MODE: "/api/set-automatic-mode",
-    SET_TARGET_TEMPERATURE: "/api/set-target-temperature",
-    GET_CONFIG: "/api/get-config"
-};
-
-const EVENT_SOURCE_ENDPOINT = "/events";
+import { API_ENDPOINTS, EVENT_SOURCE_ENDPOINT } from "./api-endpoints"
 
 export const useHomeStore = defineStore("home", () => {
     const application = useApplicationStore();
@@ -24,6 +16,7 @@ export const useHomeStore = defineStore("home", () => {
     const targetTemperature = ref(25);
     const isLoading = ref(true);
     const errors = reactive({ hasError: false, errors: [] })
+    const isSoftAPMode = application.isSoftAPMode;
 
     // Read more about EventSource: 
     // https://developer.mozilla.org/en-US/docs/Web/API/EventSource
@@ -44,16 +37,14 @@ export const useHomeStore = defineStore("home", () => {
             console.log("message", e.data);
         }, false);
 
-        source.addEventListener('onTemperatureHumidityReading', function (e) {
-            console.log("onTemperatureHumidityReading", e.data);
+        source.addEventListener('onTemperatureHumidityReading', function (e) {            
             var tempHumDto = JSON.parse(e.data);
 
             temperatureRounded.value = parseFloat(tempHumDto.temperature).toFixed(2);
             humidityRounded.value = parseFloat(tempHumDto.humidity).toFixed(2);
         }, false);
 
-        source.addEventListener("onFanTachoReading", (e) => {
-            console.log("onFanTachoReading", e.data);
+        source.addEventListener("onFanTachoReading", (e) => {            
             var reading = JSON.parse(e.data);
             fanTacho.value = reading.fanTacho;
             currentFanSpeedPercentage.value = reading.currentFanSpeedPercentage;
@@ -106,6 +97,7 @@ export const useHomeStore = defineStore("home", () => {
         getConfig,
         setFanSpeed,
         setAutoMode,
-        setTargetTemperature
+        setTargetTemperature,
+        isSoftAPMode
     };
 });

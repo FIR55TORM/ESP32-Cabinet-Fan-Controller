@@ -51,6 +51,7 @@ String mqttClientName;
 
 // wifi & MQTT config file
 const char *configPath = "/config.json";
+bool isSoftAPMode = false;
 
 IPAddress localIP;
 // Set your Gateway IP address
@@ -304,6 +305,34 @@ void setup()
   initConfigFile();
   // initSensorDataLogger();
 
+  server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                       { 
+                            if(request->url() == "/WifiDetails" && request->method() == HTTP_POST)
+                            {
+                              DynamicJsonDocument json(1024); 
+
+                              if (DeserializationError::Ok == deserializeJson(json, (const char*)data))
+                              {
+                                JsonObject obj = json.as<JsonObject>();
+
+                                String jsonString = json.as<String>();
+                                writeFile(SPIFFS, configPath, jsonString.c_str());
+
+                                request->send(200, "text/plain", "Done. FAN CONTROL will restart, connect to your router and go to IP address: " + ip);
+                                delay(3000);
+                                ESP.restart();
+                              }
+                            } });
+
+  server.on("/api/isSoftAPMode", HTTP_GET, [](AsyncWebServerRequest *request)
+            { 
+
+     AsyncResponseStream *response = request->beginResponseStream("application/json");
+                DynamicJsonDocument json(1024);                
+                json["isSoftAPMode"] = isSoftAPMode;                
+                serializeJson(json, *response);
+                request->send(response); });
+
   if (initWiFi())
   {
     initEventSources();
@@ -313,15 +342,6 @@ void setup()
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", "text/html", false); });
     server.serveStatic("/", SPIFFS, "/");
-
-    // Handle Web Assets
-    // server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request)
-    //           {
-    //             AsyncWebServerResponse *response  = request->beginResponse(SPIFFS, "assets/index.js.gz", "text/javascript", false);
-    //             response->addHeader("Content-Encoding", "gzip");
-    //             request->send(response);
-    //             Serial.println("beep");
-    //             });
 
     // Route to get Sensor Data
     server.on("/api/get-sensors", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -431,6 +451,7 @@ void setup()
   }
   else
   {
+    isSoftAPMode = true;
     // Connect to Wi-Fi network with SSID and password
     Serial.println("Setting AP (Access Point)");
     // NULL sets an open Access Point
@@ -445,25 +466,6 @@ void setup()
               { request->send(SPIFFS, "/index.html", "text/html"); });
 
     server.serveStatic("/", SPIFFS, "/");
-
-    server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-                         { 
-                            if(request->url() == "/WifiDetails" && request->method() == HTTP_POST)
-                            {
-                              DynamicJsonDocument json(1024); 
-
-                              if (DeserializationError::Ok == deserializeJson(json, (const char*)data))
-                              {
-                                JsonObject obj = json.as<JsonObject>();
-
-                                String jsonString = json.as<String>();
-                                writeFile(SPIFFS, configPath, jsonString.c_str());
-
-                                request->send(200, "text/plain", "Done. FAN CONTROL will restart, connect to your router and go to IP address: " + ip);
-                                delay(3000);
-                                ESP.restart();
-                              }
-                            } });
 
     server.begin();
   }
