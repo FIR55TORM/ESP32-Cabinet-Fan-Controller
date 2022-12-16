@@ -83,17 +83,10 @@ void onMqttConnect(bool sessionPresent)
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
-  Serial.print("Subscribing at QoS 2, packetId: ");
-  Serial.println(packetIdSub);
-  mqttClient.publish("test/lol", 0, true, "test 1");
-  Serial.println("Publishing at QoS 0");
+  mqttClient.subscribe("cabfan/speed", 0);
+
   uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
-  Serial.print("Publishing at QoS 1, packetId: ");
-  Serial.println(packetIdPub1);
   uint16_t packetIdPub2 = mqttClient.publish("test/lol", 2, true, "test 3");
-  Serial.print("Publishing at QoS 2, packetId: ");
-  Serial.println(packetIdPub2);
 }
 
 void initMQTT()
@@ -289,8 +282,9 @@ void initEventSources()
   server.addHandler(&events);
 }
 
-AsyncWebHandler handleStaticAssets(AsyncWebServerRequest *request, String path)
+void floatToCharArray(float number, int length, int precision, char *buffer)
 {
+  dtostrf(number, length + 1, precision, buffer);
 }
 
 void setup()
@@ -305,7 +299,6 @@ void setup()
   initWifiAndMQTTDetails();
   initSDCard();
   initConfigFile();
-  // initSensorDataLogger();
 
   server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
                        { 
@@ -511,19 +504,23 @@ void loop()
       String stringifiedTempsJson;
       serializeJson(tempsJson, stringifiedTempsJson);
 
-      events.send(stringifiedTempsJson.c_str(), "onTemperatureHumidityReading", millis());
-
       // Tacho
       DynamicJsonDocument tachoJson(1024);
-      tachoJson["fanTacho"] = readFanTacho();
-      tachoJson["currentFanSpeedPercentage"] = getCurrentFanSpeedPercentage();
+      int tachoSpeed = readFanTacho();
+      int percentageSpeed = getCurrentFanSpeedPercentage();
+
+      tachoJson["fanTacho"] = tachoSpeed;
+      tachoJson["currentFanSpeedPercentage"] = percentageSpeed;
       String stringifiedTachoJson;
       serializeJson(tachoJson, stringifiedTachoJson);
 
-      events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());
+      // EventSource
+      events.send(stringifiedTempsJson.c_str(), "onTemperatureHumidityReading", millis());
+      events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());      
 
-      // Data Logging
-      // printLocalTime();
+      //MQTT
+      mqttClient.publish("cabfan/temperaturehumidity", 0, true, stringifiedTempsJson.c_str());
+      mqttClient.publish("cabfan/fantacho", 0, true, stringifiedTachoJson.c_str());
     }
   }
 }
