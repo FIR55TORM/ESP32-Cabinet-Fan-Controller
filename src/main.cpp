@@ -18,7 +18,6 @@
 #include "includes/ControllerConfigManager.h"
 #include "includes/TemperatureControlManager.h"
 #include "includes/fanTachometer.h"
-#include "includes/SensorDataLoggerManager.h"
 #include "includes/AdafruitOLED64x128.h"
 
 // ajax parameters in HTTP POST request for Wifi
