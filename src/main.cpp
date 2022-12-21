@@ -19,6 +19,8 @@
 #include "includes/TemperatureControlManager.h"
 #include "includes/fanTachometer.h"
 #include "includes/AdafruitOLED64x128.h"
+#include "includes/MqttTopics.h"
+#include "esp_wifi.h"
 
 // ajax parameters in HTTP POST request for Wifi
 const char *PARAM_INPUT_SSID = "ssid";
@@ -75,6 +77,7 @@ AsyncEventSource events("/events");
 
 // MQTT Config
 AsyncMqttClient mqttClient;
+MqttTopics mqttTopics;
 
 // MQTT
 void onMqttConnect(bool sessionPresent)
@@ -82,10 +85,71 @@ void onMqttConnect(bool sessionPresent)
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  mqttClient.subscribe("cabfan/speed", 0);
+  mqttClient.subscribe(mqttTopics.speedTopic, 0);
+  mqttClient.subscribe(mqttTopics.autoModeTopic, 0);
+  mqttClient.subscribe(mqttTopics.targetTemperatureTopic, 0);
+}
 
-  uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
-  uint16_t packetIdPub2 = mqttClient.publish("test/lol", 2, true, "test 3");
+void onMqttSubscribe(uint16_t packetId, uint16_t qos)
+{
+  Serial.println("Subscribe acknowledged.");
+  Serial.print("  packetId: ");
+  Serial.println(packetId);
+  Serial.print("  qos: ");
+  Serial.println(qos);
+}
+
+void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
+{
+  const char *fanSpeedProp = "fanSpeed";
+  const char *autoModeProp = "autoMode";
+  const char *targetTemperatureProp = "targetTemperature";
+
+  MqttTopicsEnum topicEnum = mqttTopics.ContainsTopic(topic);
+  DynamicJsonDocument json(1024);
+  switch (topicEnum)
+  {
+  case MqttTopicsEnum::speed:
+    Serial.println(topic);
+    Serial.println(payload);
+    if (DeserializationError::Ok == deserializeJson(json, payload))
+    {
+      JsonObject jsonObject = json.as<JsonObject>();
+      int speed = jsonObject[fanSpeedProp].as<int>();
+
+      if (speed > -1 && speed < 101)
+      {
+        setFanPWM(speed);
+      }
+    }
+    break;
+
+  case MqttTopicsEnum::autoMode:
+    Serial.println(topic);
+    Serial.println(payload);
+    if (DeserializationError::Ok == deserializeJson(json, payload))
+    {
+      JsonObject jsonObject = json.as<JsonObject>();
+      bool autoMode = jsonObject[autoModeProp].as<bool>();
+      setAutomaticMode(autoMode);
+    }
+    break;
+
+  case MqttTopicsEnum::targetTemperature:
+    Serial.println(topic);
+    Serial.println(payload);
+    if (DeserializationError::Ok == deserializeJson(json, payload))
+    {
+      JsonObject jsonObject = json.as<JsonObject>();
+      int targetTemperature = jsonObject[targetTemperatureProp].as<int>();
+      setTargetTemperature(targetTemperature);
+    }
+    break;
+
+  default:
+    Serial.println("No topic found");
+    break;
+  }
 }
 
 void initMQTT()
@@ -99,6 +163,8 @@ void initMQTT()
   mqttClient.setServer(mqttServerIp.c_str(), mqttServerPort);
   mqttClient.setCredentials(mqttUsername.c_str(), mqttPassword.c_str());
   mqttClient.setClientId(mqttClientName.c_str());
+  mqttClient.onSubscribe(onMqttSubscribe);
+  mqttClient.onMessage(onMqttMessage);
 
   mqttClient.connect();
 }
@@ -202,7 +268,7 @@ bool initWiFi()
   }
 
   WiFi.mode(WIFI_STA);
-  // Esp_wifi_set_ps (WIFI_PS_NONE); //stop power saving mode
+  esp_wifi_set_ps(WIFI_PS_NONE); //stop power saving mode
   WiFi.setSleep(false);
   localIP.fromString(ip.c_str());
   localGateway.fromString(gateway.c_str());
@@ -287,7 +353,7 @@ void floatToCharArray(float number, int length, int precision, char *buffer)
 }
 
 void setup()
-{
+{  
   Serial.begin(115200);
 
   initDisplay();
@@ -467,6 +533,8 @@ void setup()
 
 void loop()
 {
+   delay(1); //https://github.com/espressif/arduino-esp32/issues/4348
+
   if (WiFi.status() == WL_CONNECTED)
   {
     updateTacho();
@@ -515,9 +583,9 @@ void loop()
 
       // EventSource
       events.send(stringifiedTempsJson.c_str(), "onTemperatureHumidityReading", millis());
-      events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());      
+      events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());
 
-      //MQTT
+      // MQTT
       mqttClient.publish("cabfan/temperaturehumidity", 0, true, stringifiedTempsJson.c_str());
       mqttClient.publish("cabfan/fantacho", 0, true, stringifiedTachoJson.c_str());
     }
