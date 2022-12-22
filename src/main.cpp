@@ -586,8 +586,8 @@ void loop()
       events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());
 
       // MQTT
-      mqttClient.publish("cabfan/temperaturehumidity", 0, true, stringifiedTempsJson.c_str());
-      mqttClient.publish("cabfan/fantacho", 0, true, stringifiedTachoJson.c_str());
+      mqttClient.publish(mqttTopics.temperatureHumidityTopic, 0, true, stringifiedTempsJson.c_str());
+      mqttClient.publish(mqttTopics.fanTachoTopic, 0, true, stringifiedTachoJson.c_str());
     }
   }
 }
