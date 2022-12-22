@@ -1,0 +1,283 @@
+[
+    {
+        "id": "c40e303c23130819",
+        "type": "tab",
+        "label": "Cabinet Fan Flows",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "ee038f3aa0e9ce7b",
+        "type": "mqtt in",
+        "z": "c40e303c23130819",
+        "name": "",
+        "topic": "cabfan/fanTacho",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "90b9d9c2269bbc00",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 120,
+        "y": 360,
+        "wires": [
+            [
+                "3abeb49eceb88de9"
+            ]
+        ]
+    },
+    {
+        "id": "3abeb49eceb88de9",
+        "type": "debug",
+        "z": "c40e303c23130819",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "87950e671938ef5b",
+        "type": "inject",
+        "z": "c40e303c23130819",
+        "name": "setFanSpeed",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{ \"fanSpeed\": 100 }",
+        "payloadType": "json",
+        "x": 130,
+        "y": 40,
+        "wires": [
+            [
+                "5e3320754e6ee6af"
+            ]
+        ]
+    },
+    {
+        "id": "5e3320754e6ee6af",
+        "type": "mqtt out",
+        "z": "c40e303c23130819",
+        "name": "",
+        "topic": "cabfan/speed",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "90b9d9c2269bbc00",
+        "x": 400,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "eb2901eec5bed4aa",
+        "type": "inject",
+        "z": "c40e303c23130819",
+        "name": "setAutoModeToTrue",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{ \"autoMode\": true }",
+        "payloadType": "json",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "0413dc1ec15610e4"
+            ]
+        ]
+    },
+    {
+        "id": "0413dc1ec15610e4",
+        "type": "mqtt out",
+        "z": "c40e303c23130819",
+        "name": "",
+        "topic": "cabfan/automode",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "90b9d9c2269bbc00",
+        "x": 410,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "116c1afb47e8a4ca",
+        "type": "inject",
+        "z": "c40e303c23130819",
+        "name": "setAutoModeToFalse",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{ \"autoMode\": false }",
+        "payloadType": "json",
+        "x": 160,
+        "y": 160,
+        "wires": [
+            [
+                "f12cabcbb9794da4"
+            ]
+        ]
+    },
+    {
+        "id": "f12cabcbb9794da4",
+        "type": "mqtt out",
+        "z": "c40e303c23130819",
+        "name": "",
+        "topic": "cabfan/automode",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "90b9d9c2269bbc00",
+        "x": 410,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "ad8839584c1eec9e",
+        "type": "inject",
+        "z": "c40e303c23130819",
+        "name": "setTargetTemperature",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{ \"targetTemperature\": 20 }",
+        "payloadType": "json",
+        "x": 160,
+        "y": 220,
+        "wires": [
+            [
+                "7221f101d3c66a89"
+            ]
+        ]
+    },
+    {
+        "id": "7221f101d3c66a89",
+        "type": "mqtt out",
+        "z": "c40e303c23130819",
+        "name": "",
+        "topic": "cabfan/targetTemperature",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "90b9d9c2269bbc00",
+        "x": 430,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "6333659a5e2705d1",
+        "type": "mqtt in",
+        "z": "c40e303c23130819",
+        "name": "",
+        "topic": "cabfan/temperatureHumidity",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "90b9d9c2269bbc00",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 420,
+        "wires": [
+            [
+                "aa1594d68528b258"
+            ]
+        ]
+    },
+    {
+        "id": "aa1594d68528b258",
+        "type": "debug",
+        "z": "c40e303c23130819",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 400,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "90b9d9c2269bbc00",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "192.168.1.235",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

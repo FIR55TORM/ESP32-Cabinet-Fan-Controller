@@ -18,8 +18,9 @@
 #include "includes/ControllerConfigManager.h"
 #include "includes/TemperatureControlManager.h"
 #include "includes/fanTachometer.h"
-#include "includes/SensorDataLoggerManager.h"
 #include "includes/AdafruitOLED64x128.h"
+#include "includes/MqttTopics.h"
+#include "esp_wifi.h"
 
 // ajax parameters in HTTP POST request for Wifi
 const char *PARAM_INPUT_SSID = "ssid";
@@ -44,13 +45,14 @@ String gateway;
 // MQTT variables to save values from HTML form
 bool useMQTT = false;
 String mqttServerIp;
-String mqttServerPort;
+int mqttServerPort;
 String mqttUsername;
 String mqttPassword;
 String mqttClientName;
 
 // wifi & MQTT config file
 const char *configPath = "/config.json";
+bool isSoftAPMode = false;
 
 IPAddress localIP;
 // Set your Gateway IP address
@@ -75,6 +77,7 @@ AsyncEventSource events("/events");
 
 // MQTT Config
 AsyncMqttClient mqttClient;
+MqttTopics mqttTopics;
 
 // MQTT
 void onMqttConnect(bool sessionPresent)
@@ -82,17 +85,71 @@ void onMqttConnect(bool sessionPresent)
   Serial.println("Connected to MQTT.");
   Serial.print("Session present: ");
   Serial.println(sessionPresent);
-  uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
-  Serial.print("Subscribing at QoS 2, packetId: ");
-  Serial.println(packetIdSub);
-  mqttClient.publish("test/lol", 0, true, "test 1");
-  Serial.println("Publishing at QoS 0");
-  uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
-  Serial.print("Publishing at QoS 1, packetId: ");
-  Serial.println(packetIdPub1);
-  uint16_t packetIdPub2 = mqttClient.publish("test/lol", 2, true, "test 3");
-  Serial.print("Publishing at QoS 2, packetId: ");
-  Serial.println(packetIdPub2);
+  mqttClient.subscribe(mqttTopics.speedTopic, 0);
+  mqttClient.subscribe(mqttTopics.autoModeTopic, 0);
+  mqttClient.subscribe(mqttTopics.targetTemperatureTopic, 0);
+}
+
+void onMqttSubscribe(uint16_t packetId, uint16_t qos)
+{
+  Serial.println("Subscribe acknowledged.");
+  Serial.print("  packetId: ");
+  Serial.println(packetId);
+  Serial.print("  qos: ");
+  Serial.println(qos);
+}
+
+void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
+{
+  const char *fanSpeedProp = "fanSpeed";
+  const char *autoModeProp = "autoMode";
+  const char *targetTemperatureProp = "targetTemperature";
+
+  MqttTopicsEnum topicEnum = mqttTopics.ContainsTopic(topic);
+  DynamicJsonDocument json(1024);
+  switch (topicEnum)
+  {
+  case MqttTopicsEnum::speed:
+    Serial.println(topic);
+    Serial.println(payload);
+    if (DeserializationError::Ok == deserializeJson(json, payload))
+    {
+      JsonObject jsonObject = json.as<JsonObject>();
+      int speed = jsonObject[fanSpeedProp].as<int>();
+
+      if (speed > -1 && speed < 101)
+      {
+        setFanPWM(speed);
+      }
+    }
+    break;
+
+  case MqttTopicsEnum::autoMode:
+    Serial.println(topic);
+    Serial.println(payload);
+    if (DeserializationError::Ok == deserializeJson(json, payload))
+    {
+      JsonObject jsonObject = json.as<JsonObject>();
+      bool autoMode = jsonObject[autoModeProp].as<bool>();
+      setAutomaticMode(autoMode);
+    }
+    break;
+
+  case MqttTopicsEnum::targetTemperature:
+    Serial.println(topic);
+    Serial.println(payload);
+    if (DeserializationError::Ok == deserializeJson(json, payload))
+    {
+      JsonObject jsonObject = json.as<JsonObject>();
+      int targetTemperature = jsonObject[targetTemperatureProp].as<int>();
+      setTargetTemperature(targetTemperature);
+    }
+    break;
+
+  default:
+    Serial.println("No topic found");
+    break;
+  }
 }
 
 void initMQTT()
@@ -103,9 +160,13 @@ void initMQTT()
   }
 
   mqttClient.onConnect(onMqttConnect);
-  mqttClient.setServer("192.168.1.110", 1883);
-  mqttClient.setCredentials("homeassistant", "ieX4shaimieveiShe4quaiW7ea2vienaeV0Ii8hae9ietheePieTu0iepeeNg8fe");
-  mqttClient.setClientId("Cabinet Fan Controller");
+  mqttClient.setServer(mqttServerIp.c_str(), mqttServerPort);
+  mqttClient.setCredentials(mqttUsername.c_str(), mqttPassword.c_str());
+  mqttClient.setClientId(mqttClientName.c_str());
+  mqttClient.onSubscribe(onMqttSubscribe);
+  mqttClient.onMessage(onMqttMessage);
+
+  mqttClient.connect();
 }
 
 // Initialize SPIFFS
@@ -207,7 +268,7 @@ bool initWiFi()
   }
 
   WiFi.mode(WIFI_STA);
-  // Esp_wifi_set_ps (WIFI_PS_NONE); //stop power saving mode
+  esp_wifi_set_ps(WIFI_PS_NONE); //stop power saving mode
   WiFi.setSleep(false);
   localIP.fromString(ip.c_str());
   localGateway.fromString(gateway.c_str());
@@ -265,7 +326,7 @@ void initWifiAndMQTTDetails()
     // MQTT
     useMQTT = obj[PARAM_INPUT_IS_USING_MQTT].as<bool>();
     mqttServerIp = obj[PARAM_INPUT_BROKER_IP].as<String>().c_str();
-    mqttServerPort = obj[PARAM_INPUT_BROKER_PORT].as<String>().c_str();
+    mqttServerPort = obj[PARAM_INPUT_BROKER_PORT].as<int>();
     mqttUsername = obj[PARAM_INPUT_BROKER_USERNAME].as<String>().c_str();
     mqttPassword = obj[PARAM_INPUT_BROKER_PASSWORD].as<String>().c_str();
     mqttClientName = obj[PARAM_INPUT_CLIENT_NAME].as<String>().c_str();
@@ -286,12 +347,13 @@ void initEventSources()
   server.addHandler(&events);
 }
 
-AsyncWebHandler handleStaticAssets(AsyncWebServerRequest *request, String path)
+void floatToCharArray(float number, int length, int precision, char *buffer)
 {
+  dtostrf(number, length + 1, precision, buffer);
 }
 
 void setup()
-{
+{  
   Serial.begin(115200);
 
   initDisplay();
@@ -302,7 +364,34 @@ void setup()
   initWifiAndMQTTDetails();
   initSDCard();
   initConfigFile();
-  // initSensorDataLogger();
+
+  server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
+                       { 
+                            if(request->url() == "/WifiDetails" && request->method() == HTTP_POST)
+                            {
+                              DynamicJsonDocument json(1024); 
+
+                              if (DeserializationError::Ok == deserializeJson(json, (const char*)data))
+                              {
+                                JsonObject obj = json.as<JsonObject>();
+
+                                String jsonString = json.as<String>();
+                                writeFile(SPIFFS, configPath, jsonString.c_str());
+
+                                request->send(200, "text/plain", "Done. FAN CONTROL will restart, connect to your router and go to IP address: " + ip);
+                                delay(3000);
+                                ESP.restart();
+                              }
+                            } });
+
+  server.on("/api/isSoftAPMode", HTTP_GET, [](AsyncWebServerRequest *request)
+            { 
+
+     AsyncResponseStream *response = request->beginResponseStream("application/json");
+                DynamicJsonDocument json(1024);                
+                json["isSoftAPMode"] = isSoftAPMode;                
+                serializeJson(json, *response);
+                request->send(response); });
 
   if (initWiFi())
   {
@@ -313,15 +402,6 @@ void setup()
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", "text/html", false); });
     server.serveStatic("/", SPIFFS, "/");
-
-    // Handle Web Assets
-    // server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request)
-    //           {
-    //             AsyncWebServerResponse *response  = request->beginResponse(SPIFFS, "assets/index.js.gz", "text/javascript", false);
-    //             response->addHeader("Content-Encoding", "gzip");
-    //             request->send(response);
-    //             Serial.println("beep");
-    //             });
 
     // Route to get Sensor Data
     server.on("/api/get-sensors", HTTP_GET, [](AsyncWebServerRequest *request)
@@ -431,6 +511,7 @@ void setup()
   }
   else
   {
+    isSoftAPMode = true;
     // Connect to Wi-Fi network with SSID and password
     Serial.println("Setting AP (Access Point)");
     // NULL sets an open Access Point
@@ -446,31 +527,14 @@ void setup()
 
     server.serveStatic("/", SPIFFS, "/");
 
-    server.onRequestBody([](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
-                         { 
-                            if(request->url() == "/WifiDetails" && request->method() == HTTP_POST)
-                            {
-                              DynamicJsonDocument json(1024); 
-
-                              if (DeserializationError::Ok == deserializeJson(json, (const char*)data))
-                              {
-                                JsonObject obj = json.as<JsonObject>();
-
-                                String jsonString = json.as<String>();
-                                writeFile(SPIFFS, configPath, jsonString.c_str());
-
-                                request->send(200, "text/plain", "Done. FAN CONTROL will restart, connect to your router and go to IP address: " + ip);
-                                delay(3000);
-                                ESP.restart();
-                              }
-                            } });
-
     server.begin();
   }
 }
 
 void loop()
 {
+   delay(1); //https://github.com/espressif/arduino-esp32/issues/4348
+
   if (WiFi.status() == WL_CONNECTED)
   {
     updateTacho();
@@ -507,19 +571,23 @@ void loop()
       String stringifiedTempsJson;
       serializeJson(tempsJson, stringifiedTempsJson);
 
-      events.send(stringifiedTempsJson.c_str(), "onTemperatureHumidityReading", millis());
-
       // Tacho
       DynamicJsonDocument tachoJson(1024);
-      tachoJson["fanTacho"] = readFanTacho();
-      tachoJson["currentFanSpeedPercentage"] = getCurrentFanSpeedPercentage();
+      int tachoSpeed = readFanTacho();
+      int percentageSpeed = getCurrentFanSpeedPercentage();
+
+      tachoJson["fanTacho"] = tachoSpeed;
+      tachoJson["currentFanSpeedPercentage"] = percentageSpeed;
       String stringifiedTachoJson;
       serializeJson(tachoJson, stringifiedTachoJson);
 
+      // EventSource
+      events.send(stringifiedTempsJson.c_str(), "onTemperatureHumidityReading", millis());
       events.send(stringifiedTachoJson.c_str(), "onFanTachoReading", millis());
 
-      // Data Logging
-      // printLocalTime();
+      // MQTT
+      mqttClient.publish(mqttTopics.temperatureHumidityTopic, 0, true, stringifiedTempsJson.c_str());
+      mqttClient.publish(mqttTopics.fanTachoTopic, 0, true, stringifiedTachoJson.c_str());
     }
   }
 }

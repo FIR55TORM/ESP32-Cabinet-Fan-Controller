@@ -26,6 +26,7 @@ TemperatureHumidityDto getTemperatureAndHumidity()
     if (isnan(event.temperature))
     {
         Serial.println(F("Error reading temperature!"));
+        temperatureHumidityDto.temperature = -273; //impossible - absolute zero
     }
     else
     {
@@ -37,6 +38,7 @@ TemperatureHumidityDto getTemperatureAndHumidity()
     if (isnan(event.relative_humidity))
     {
         Serial.println(F("Error reading humidity!"));
+        temperatureHumidityDto.humidity = 0; //impossible on a world like Earth.
     }
     else
     {

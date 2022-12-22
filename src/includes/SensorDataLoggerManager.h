@@ -1,2 +1,0 @@
-bool initSensorDataLogger();
-void printLocalTime();

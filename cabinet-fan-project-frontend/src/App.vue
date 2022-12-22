@@ -1,9 +1,22 @@
 <script setup>
-import { RouterLink, RouterView } from "vue-router";
+import { onMounted } from "vue";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faFan } from "@fortawesome/free-solid-svg-icons";
+import { useApplicationStore } from "./stores/application";
 
 library.add(faFan);
+
+const applicationStore = useApplicationStore();
+const router = useRouter();
+
+onMounted(() => {
+  applicationStore.getIsSoftAPMode().then(() => {
+    if (applicationStore.isSoftAPMode) {
+      router.push("/wifimanager");
+    }
+  });
+});
 </script>
 
 <template>
@@ -18,7 +31,7 @@ library.add(faFan);
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
+          <li class="nav-item" v-if="!applicationStore.isSoftAPMode">
             <RouterLink class="nav-link" aria-current="page" to="/">Home</RouterLink>
           </li>
           <li class="nav-item">
