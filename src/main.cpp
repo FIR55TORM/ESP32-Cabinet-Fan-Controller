@@ -1,5 +1,5 @@
-#define CORS_DEBUG true
-
+#include "includes/Config.h"
+#include "includes/sensors/TemperatureHumiditySensorManager.h"
 #include <Arduino.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
@@ -12,7 +12,6 @@
 #include "SD.h"
 #include "SPI.h"
 #include <AsyncMqttClient.h>
-#include "includes/DHT11Sensor.h"
 #include "includes/fanPWM.h"
 #include "dtos/TemperatureHumidityDto.h"
 #include "includes/ControllerConfigManager.h"
@@ -21,6 +20,8 @@
 #include "includes/AdafruitOLED64x128.h"
 #include "includes/MqttTopics.h"
 #include "esp_wifi.h"
+
+TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
 
 // ajax parameters in HTTP POST request for Wifi
 const char *PARAM_INPUT_SSID = "ssid";
@@ -268,7 +269,7 @@ bool initWiFi()
   }
 
   WiFi.mode(WIFI_STA);
-  esp_wifi_set_ps(WIFI_PS_NONE); //stop power saving mode
+  esp_wifi_set_ps(WIFI_PS_NONE); // stop power saving mode
   WiFi.setSleep(false);
   localIP.fromString(ip.c_str());
   localGateway.fromString(gateway.c_str());
@@ -353,12 +354,12 @@ void floatToCharArray(float number, int length, int precision, char *buffer)
 }
 
 void setup()
-{  
+{
   Serial.begin(115200);
 
   initDisplay();
   initSPIFFS();
-  initDHTSensor();
+  temperatureHumiditySensorManager = TemperatureHumiditySensorManager(); //Ctor inits sensor of choice  
   initFanPWM();
   initTacho();
   initWifiAndMQTTDetails();
@@ -408,7 +409,7 @@ void setup()
               {
                 AsyncResponseStream *response = request->beginResponseStream("application/json");
                 DynamicJsonDocument json(1024);
-                TemperatureHumidityDto temps = getTemperatureAndHumidity();
+                TemperatureHumidityDto temps = temperatureHumiditySensorManager.getTemperatureAndHumidity();
                 json["humidity"] = temps.humidity;
                 json["temperature"] = temps.temperature;
                 serializeJson(json, *response);
@@ -533,7 +534,7 @@ void setup()
 
 void loop()
 {
-   delay(1); //https://github.com/espressif/arduino-esp32/issues/4348
+  delay(1); // https://github.com/espressif/arduino-esp32/issues/4348
 
   if (WiFi.status() == WL_CONNECTED)
   {
@@ -565,7 +566,7 @@ void loop()
 
       // Temps
       DynamicJsonDocument tempsJson(1024);
-      TemperatureHumidityDto temps = getTemperatureAndHumidity();
+      TemperatureHumidityDto temps = temperatureHumiditySensorManager.getTemperatureAndHumidity();
       tempsJson["humidity"] = temps.humidity;
       tempsJson["temperature"] = temps.temperature;
       String stringifiedTempsJson;

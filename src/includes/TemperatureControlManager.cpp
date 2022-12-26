@@ -1,4 +1,6 @@
-#include "includes/DHT11Sensor.h"
+//#pragma once
+#include "sensors/TemperatureHumiditySensorManager.h"
+#include "dtos/TemperatureHumidityDto.h"
 #include "includes/ControllerConfigManager.h"
 #include "includes/fanPWM.h"
 #include <Arduino.h>
@@ -7,7 +9,8 @@ int fanSpeedPercentage = 100; // Initially set to 100%
 
 void setFanSpeedFromTemperature()
 {
-    TemperatureHumidityDto dto = getTemperatureAndHumidity();
+    TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
+    TemperatureHumidityDto dto = temperatureHumiditySensorManager.getTemperatureAndHumidity();
     float temperatureDelta = dto.temperature - config.targetTemperature;    
     int fanSpeedMinimumPercentage = 15;
     int fanSpeedMaximumPercentage = 85; //for future use    
