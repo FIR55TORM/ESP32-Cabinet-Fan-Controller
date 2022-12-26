@@ -17,7 +17,7 @@ void setFanSpeedFromTemperature()
 
 #ifndef IS_USING_AHT20
     // This exists to account for the error prone DHT11 Sensor. Prevents the fans spinning up to 100% randomly. Usually corrects itself.
-    if (!isnan(dto.temperature))
+    if (isnan(dto.temperature))
     {
         temperatureDelta = 0.5f;
     }
