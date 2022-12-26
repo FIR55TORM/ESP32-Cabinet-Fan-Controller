@@ -7,19 +7,21 @@
 
 class AHT20Sensor : TemperatureHumiditySensor
 {
-public:    
+public:
     Adafruit_AHTX0 aht;
 
-    inline void initSensor()
+    void initSensor()
     {
         // Initialize device.
-        aht.begin();
-        Serial.println(F("AHT20 Unified Sensor"));
+        if (aht.begin())
+        {
+            Serial.println(F("AHT20 Unified Sensor"));
 
-        getTemperatureAndHumidity();
+            getTemperatureAndHumidity();
+        }
     }
 
-    inline TemperatureHumidityDto getTemperatureAndHumidity()
+    TemperatureHumidityDto getTemperatureAndHumidity()
     {
         // Get temperature event and print its value.
         sensors_event_t humidityEvent, tempEvent;

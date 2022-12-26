@@ -15,7 +15,7 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 class DHT11Sensor : TemperatureHumiditySensor
 {
 public:
-    inline void initSensor()
+    void initSensor()
     {
         // Initialize device.
         dht.begin();
@@ -24,7 +24,7 @@ public:
         getTemperatureAndHumidity();
     }
 
-    inline TemperatureHumidityDto getTemperatureAndHumidity()
+    TemperatureHumidityDto getTemperatureAndHumidity()
     {
         // Get temperature event and print its value.
         sensors_event_t event;

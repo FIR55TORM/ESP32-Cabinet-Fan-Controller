@@ -21,8 +21,6 @@
 #include "includes/MqttTopics.h"
 #include "esp_wifi.h"
 
-TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
-
 // ajax parameters in HTTP POST request for Wifi
 const char *PARAM_INPUT_SSID = "ssid";
 const char *PARAM_INPUT_PASSKEY = "passkey";
@@ -359,7 +357,6 @@ void setup()
 
   initDisplay();
   initSPIFFS();
-  temperatureHumiditySensorManager = TemperatureHumiditySensorManager(); //Ctor inits sensor of choice  
   initFanPWM();
   initTacho();
   initWifiAndMQTTDetails();
@@ -407,6 +404,7 @@ void setup()
     // Route to get Sensor Data
     server.on("/api/get-sensors", HTTP_GET, [](AsyncWebServerRequest *request)
               {
+                TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();  
                 AsyncResponseStream *response = request->beginResponseStream("application/json");
                 DynamicJsonDocument json(1024);
                 TemperatureHumidityDto temps = temperatureHumiditySensorManager.getTemperatureAndHumidity();
@@ -564,6 +562,8 @@ void loop()
     {
       previousMilliseconds5000Cycle = currentMilliseconds;
 
+      TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
+      
       // Temps
       DynamicJsonDocument tempsJson(1024);
       TemperatureHumidityDto temps = temperatureHumiditySensorManager.getTemperatureAndHumidity();
