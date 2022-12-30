@@ -1,4 +1,6 @@
-#include "includes/DHT11Sensor.h"
+#include "includes/Config.h"
+#include "sensors/TemperatureHumiditySensorManager.h"
+#include "dtos/TemperatureHumidityDto.h"
 #include "includes/ControllerConfigManager.h"
 #include "includes/fanPWM.h"
 #include <Arduino.h>
@@ -7,15 +9,19 @@ int fanSpeedPercentage = 100; // Initially set to 100%
 
 void setFanSpeedFromTemperature()
 {
-    TemperatureHumidityDto dto = getTemperatureAndHumidity();
-    float temperatureDelta = dto.temperature - config.targetTemperature;    
+    TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
+    TemperatureHumidityDto dto = temperatureHumiditySensorManager.getTemperatureAndHumidity();
+    float temperatureDelta = dto.temperature - config.targetTemperature;
     int fanSpeedMinimumPercentage = 15;
-    int fanSpeedMaximumPercentage = 85; //for future use    
+    int fanSpeedMaximumPercentage = 85; // for future use
 
-    //This exists to account for the error prone DHT11 Sensor. Prevents the fans spinning up to 100% randomly. Usually corrects itself.
-    if(!isnan(dto.temperature)){
+#ifndef IS_USING_AHT20
+    // This exists to account for the error prone DHT11 Sensor. Prevents the fans spinning up to 100% randomly. Usually corrects itself.
+    if (isnan(dto.temperature))
+    {
         temperatureDelta = 0.5f;
     }
+#endif
 
     if (temperatureDelta <= 0.0)
     {
@@ -55,6 +61,7 @@ void setFanSpeedFromTemperature()
     setFanPWM(fanSpeedPercentage);
 }
 
-int getCurrentFanSpeedPercentage(){
+int getCurrentFanSpeedPercentage()
+{
     return getFanSpeedPercentage();
 }

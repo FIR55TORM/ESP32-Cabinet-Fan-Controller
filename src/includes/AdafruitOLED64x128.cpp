@@ -1,3 +1,6 @@
+//#pragma once
+#include "includes/Config.h"
+#include "sensors/TemperatureHumiditySensorManager.h"
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -5,7 +8,6 @@
 #include <WiFi.h>
 #include <Bounce2.h>
 #include "includes/fanTachometer.h"
-#include "includes/DHT11Sensor.h"
 #include "dtos/TemperatureHumidityDto.h"
 #include "includes/fanPWM.h"
 #include "includes/ImageData.h"
@@ -166,7 +168,8 @@ void clearTachoScreenArea()
 void displayTempAndFanSpeed()
 {
     int fanSpeed = getFanSpeedPercentage();
-    TemperatureHumidityDto dto = getTemperatureAndHumidity();
+    TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
+    TemperatureHumidityDto dto = temperatureHumiditySensorManager.getTemperatureAndHumidity();
 
     display.setCursor(0, 0);
     display.setTextSize(1);
