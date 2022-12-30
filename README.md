@@ -50,10 +50,11 @@ I currently power the ESP32 via a usb hub and the fans with a 12v 2amp adapter. 
 
 ## Current support
 * Written in C++ using platform.io via VS code
+* AHT20 temp/humidity sensor (buy/use this one as it is more reliable than the DHTXX)
 * DHT11 temp/humidity sensor
 * ESP32 MCUs (I used an Adafruit Huzzah32 feather v2 with w.fl wifi connector)
 * 128x64 display (I used an Adafruit featherwing oled 128x64 display)
-* any 12v PC fans with PWM (4 pin)
+* Any 12v PC fans with PWM (4 pin)
 * Tacho reading and setting support 
 * Frontend Built using VUE-Cli and includes VueJs, Bootstrap 5, Pinia, Vite, and eCharts (TODO: need to write docs for that)
 * WiFi Manager
@@ -61,9 +62,18 @@ I currently power the ESP32 via a usb hub and the fans with a 12v 2amp adapter. 
 * MQTT Support. Full list of topics in the MqttTopics class
   
 ## Known Issues
-* The DHT11 is problematic and looking to replace it but will leave the option to use it.
 * The frontend will not update if changes are made via MQTT
   
-## Future features will be:
-* Support for Adafruit's AHT20 temp/humidity sensor + others
-* Moarrr fans??
+## TODOs & Future features:
+* Support for others sensors
+* Moarrr fans??*
+* Configurable fan threstholds 
+* Support for 0 RPM mode fans
+* OTA updates
+* PCB design
+
+> \* No reason you can't chain more fans but be aware of total amperage. Also the PCB traces on the existing design can only take so much current (and heat) so you may need to take that into account.
+
+## Likely will not be supported
+* 3 Pin fans
+* Fans that are not 12v
