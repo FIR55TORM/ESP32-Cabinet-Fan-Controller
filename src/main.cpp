@@ -505,8 +505,6 @@ void setup()
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Credentials", "true");
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 #endif
-
-    server.begin();
   }
   else
   {
@@ -525,9 +523,10 @@ void setup()
               { request->send(SPIFFS, "/index.html", "text/html"); });
 
     server.serveStatic("/", SPIFFS, "/");
-
-    server.begin();
   }
+
+  AsyncElegantOTA.begin(&server);
+  server.begin();
 }
 
 void loop()
@@ -563,7 +562,7 @@ void loop()
       previousMilliseconds5000Cycle = currentMilliseconds;
 
       TemperatureHumiditySensorManager temperatureHumiditySensorManager = TemperatureHumiditySensorManager();
-      
+
       // Temps
       DynamicJsonDocument tempsJson(1024);
       TemperatureHumidityDto temps = temperatureHumiditySensorManager.getTemperatureAndHumidity();
