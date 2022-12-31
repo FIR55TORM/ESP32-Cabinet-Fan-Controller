@@ -60,7 +60,8 @@ I currently power the ESP32 via a usb hub and the fans with a 12v 2amp adapter. 
 * WiFi Manager
 * Web server w/ ESPAsyncWebServer
 * MQTT Support. Full list of topics in the MqttTopics class
-  
+* OTA updates using AsyncElegantOTA
+
 ## Known Issues
 * The frontend will not update if changes are made via MQTT
   
@@ -69,7 +70,6 @@ I currently power the ESP32 via a usb hub and the fans with a 12v 2amp adapter. 
 * Moarrr fans??*
 * Configurable fan threstholds 
 * Support for 0 RPM mode fans
-* OTA updates
 * PCB design
 
 > \* No reason you can't chain more fans but be aware of total amperage. Also the PCB traces on the existing design can only take so much current (and heat) so you may need to take that into account.
